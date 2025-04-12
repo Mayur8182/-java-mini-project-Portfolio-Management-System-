@@ -24,13 +24,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, email, password } = req.body;
       const hashedPassword = await bcrypt.hash(password, 10);
-      
+
       const user = new User({
         username,
         email,
         password: hashedPassword
       });
-      
+
       await user.save();
       res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
@@ -43,16 +43,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = req.body;
       const user = await User.findOne({ email });
-      
+
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-      
+
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-      
+
       const token = jwt.sign({ userId: user._id }, JWT_SECRET);
       res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
     } catch (error) {
@@ -213,17 +213,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create investment
   app.post("/api/investments", authMiddleware, async (req, res) => {
     try {
-      // Validate request body
-      const result = insertInvestmentSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ message: "Invalid investment data", errors: result.error.errors });
+      const { name, amount, type, portfolioId } = req.body;
+
+      if (!name || !amount || !type || !portfolioId) {
+        return res.status(400).json({ 
+          message: 'Missing required fields',
+          details: 'Name, amount, type and portfolioId are required'
+        });
       }
 
-      const investment = await storage.createInvestment(result.data);
+      if (typeof amount !== 'number' || amount <= 0) {
+        return res.status(400).json({
+          message: 'Invalid amount',
+          details: 'Amount must be a positive number'
+        });
+      }
+
+      const newInvestment = {
+        name,
+        amount,
+        type,
+        portfolioId,
+        date: new Date().toISOString()
+      };
+
+      const investment = await storage.createInvestment(newInvestment);
       res.status(201).json(investment);
     } catch (error) {
-      console.error("Error creating investment:", error);
-      res.status(500).json({ message: "Failed to create investment" });
+      console.error('Investment creation error:', error);
+      res.status(500).json({ 
+        message: 'Failed to create investment',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
