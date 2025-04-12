@@ -213,29 +213,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create investment
   app.post("/api/investments", authMiddleware, async (req, res) => {
     try {
-      const { name, amount, type, portfolioId } = req.body;
-
-      if (!name || !amount || !type || !portfolioId) {
+      const result = insertInvestmentSchema.safeParse(req.body);
+      if (!result.success) {
         return res.status(400).json({ 
-          message: 'Missing required fields',
-          details: 'Name, amount, type and portfolioId are required'
+          message: "Invalid investment data", 
+          errors: result.error.errors 
         });
       }
 
-      if (typeof amount !== 'number' || amount <= 0) {
-        return res.status(400).json({
-          message: 'Invalid amount',
-          details: 'Amount must be a positive number'
-        });
-      }
-
-      const newInvestment = {
-        name,
-        amount,
-        type,
-        portfolioId,
-        date: new Date().toISOString()
-      };
+      const investment = await storage.createInvestment(result.data);
 
       const investment = await storage.createInvestment(newInvestment);
       res.status(201).json(investment);

@@ -42,21 +42,11 @@ export default function InvestmentsList({
 
   const handleAddInvestment = async (newInvestment: any) => {
     try {
-      const response = await fetch('/api/investments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer demo-token' // Using a demo token for now
-        },
-        body: JSON.stringify({
-          ...newInvestment,
-          portfolioId
-        })
+      await apiRequest('POST', '/api/investments', {
+        ...newInvestment,
+        portfolioId,
+        date: new Date().toISOString()
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to add investment');
-      }
 
       queryClient.invalidateQueries({ queryKey: [`/api/portfolios/${portfolioId}/investments`] });
       queryClient.invalidateQueries({ queryKey: [`/api/portfolios/${portfolioId}/summary`] });
