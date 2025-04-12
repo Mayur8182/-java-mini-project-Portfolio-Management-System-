@@ -222,8 +222,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const investment = await storage.createInvestment(result.data);
-
-      const investment = await storage.createInvestment(newInvestment);
       res.status(201).json(investment);
     } catch (error) {
       console.error('Investment creation error:', error);
