@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from './models/user';
+import { authMiddleware } from './middleware/auth';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 import { storage } from "./storage";
