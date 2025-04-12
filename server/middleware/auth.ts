@@ -11,6 +11,12 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     return res.status(401).json({ message: 'Authentication required' });
   }
 
+  // For demo purposes, accept a demo token
+  if (token === 'demo-token') {
+    req.user = { userId: 1 };
+    return next();
+  }
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;

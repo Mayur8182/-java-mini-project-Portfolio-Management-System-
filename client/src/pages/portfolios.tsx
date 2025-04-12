@@ -31,7 +31,28 @@ export default function Portfolios() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">My Portfolios</h1>
-          <Button>
+          <Button onClick={async () => {
+            try {
+              const response = await fetch('/api/portfolios', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  name: "New Investment Portfolio",
+                  userId: 1,
+                  riskLevel: "Moderate"
+                })
+              });
+              
+              if (response.ok) {
+                // Refresh the portfolios list
+                window.location.reload();
+              }
+            } catch (error) {
+              console.error("Failed to create portfolio:", error);
+            }
+          }}>
             <Plus className="h-4 w-4 mr-2" />
             New Portfolio
           </Button>
