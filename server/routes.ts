@@ -1,5 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { User } from './models/user';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 import { storage } from "./storage";
 import { z } from "zod";
 import { 
@@ -12,6 +17,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get dashboard data
   app.get("/api/portfolios/:id/summary", async (req, res) => {
     try {
+
+  // Auth routes
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const { username, email, password } = req.body;
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const user = new User({
+        username,
+        email,
+        password: hashedPassword
+      });
+      
+      await user.save();
+      res.status(201).json({ message: 'User registered successfully' });
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({ message: 'Registration failed' });
+    }
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await User.findOne({ email });
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      
+      const token = jwt.sign({ userId: user._id }, JWT_SECRET);
+      res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: 'Login failed' });
+    }
+  });
+
       const portfolioId = parseInt(req.params.id);
       if (isNaN(portfolioId)) {
         return res.status(400).json({ message: "Invalid portfolio ID" });
@@ -162,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create investment
-  app.post("/api/investments", async (req, res) => {
+  app.post("/api/investments", authMiddleware, async (req, res) => {
     try {
       // Validate request body
       const result = insertInvestmentSchema.safeParse(req.body);
